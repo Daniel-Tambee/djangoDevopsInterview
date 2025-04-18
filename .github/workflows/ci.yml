@@ -11,42 +11,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Grab the repo
+      # 1. Check out the code
       - uses: actions/checkout@v3
 
-      # 2. Enable Docker Buildx (for building multi-platform if you ever need)
+      # 2. Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. Build all images and start services in detached mode
+      # 3. Build images & start services
       - name: Build & start services
-        run: |
-          docker-compose -f docker-compose.yml up --build -d
+        run: docker compose -f docker compose.yml up --build -d
 
-      # 4. Wait for Postgres to be ready
+      # 4. Wait for Postgres to be healthy
       - name: Wait for Postgres
         run: |
-          until docker exec "$(docker-compose ps -q postgres)" pg_isready -U ${POSTGRES_USER:-youruser}; do
+          until docker compose -f docker-compose.yml exec -T postgres pg_isready -U ${POSTGRES_USER:-youruser}; do
             echo "Waiting for Postgres…"
             sleep 1
           done
 
-      # 5. Wait for Redis to be ready
+      # 5. Wait for Redis to be healthy
       - name: Wait for Redis
         run: |
-          until docker exec "$(docker-compose ps -q redis)" redis-cli ping | grep -q PONG; do
+          until docker compose -f docker compose.yml exec -T redis redis-cli ping | grep -q PONG; do
             echo "Waiting for Redis…"
             sleep 1
           done
 
-      # 6. Run Django migrations inside the web container
+      # 6. Run Django migrations
       - name: Run migrations
-        run: docker-compose exec web python manage.py migrate --noinput
+        run: docker compose -f docker compose.yml exec web python manage.py migrate --noinput
 
-      # 7. Run your test suite (e.g. pytest or Django’s test runner)
-      - name: Run tests
-        run: docker-compose exec web pytest
+      # 7. Run tests
+      - name: Run test suite
+        run: docker compose -f docker compose.yml exec web pytest
 
-      # 8. Tear down everything, removing volumes
+      # 8. Tear everything down
       - name: Tear down
-        run: docker-compose down -v
+        run: docker compose -f docker compose.yml down -v
