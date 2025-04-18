@@ -1,0 +1,25 @@
+# Dockerfile.celery
+FROM python:3.10-slim
+
+# initial workdir for install
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends gcc libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# copy your whole project
+COPY . .
+
+# now switch into myproject
+WORKDIR /app/myproject
+
+# ensure python can still import the root package if needed
+ENV PYTHONPATH=/app
+
+# celery will be run with cwd=/app/myproject
+CMD ["python", "-m", "celery", "-A", "myproject", "worker", "--loglevel=info"]
+

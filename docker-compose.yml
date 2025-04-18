@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    volumes:
+      - .:/app
+    ports:
+      - "8006:8000"
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      DJANGO_SETTINGS_MODULE: myproject.settings
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-youruser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yourpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-yourdbname}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      DJANGO_SETTINGS_MODULE: myproject.settings
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-youruser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yourpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-yourdbname}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-youruser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yourpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-yourdbname}
+    ports:
+      - "8001:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
