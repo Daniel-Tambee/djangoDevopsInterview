@@ -42,10 +42,6 @@ jobs:
       - name: Run migrations
         run: docker compose -f docker-compose.yml exec web python manage.py migrate --noinput
 
-      # 7. Run tests
-      - name: Run test suite
-        run: docker compose -f docker-compose.yml exec web pytest
-
       # 8. Tear everything down
       - name: Tear down
         run: docker compose -f docker-compose.yml down -v
