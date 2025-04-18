@@ -20,7 +20,7 @@ jobs:
 
       # 3. Build images & start services
       - name: Build & start services
-        run: docker compose -f docker compose.yml up --build -d
+        run: docker compose -f docker-compose.yml up --build -d
 
       # 4. Wait for Postgres to be healthy
       - name: Wait for Postgres
@@ -33,19 +33,19 @@ jobs:
       # 5. Wait for Redis to be healthy
       - name: Wait for Redis
         run: |
-          until docker compose -f docker compose.yml exec -T redis redis-cli ping | grep -q PONG; do
+          until docker compose -f docker-compose.yml exec -T redis redis-cli ping | grep -q PONG; do
             echo "Waiting for Redis…"
             sleep 1
           done
 
       # 6. Run Django migrations
       - name: Run migrations
-        run: docker compose -f docker compose.yml exec web python manage.py migrate --noinput
+        run: docker compose -f docker-compose.yml exec web python manage.py migrate --noinput
 
       # 7. Run tests
       - name: Run test suite
-        run: docker compose -f docker compose.yml exec web pytest
+        run: docker compose -f docker-compose.yml exec web pytest
 
       # 8. Tear everything down
       - name: Tear down
-        run: docker compose -f docker compose.yml down -v
+        run: docker compose -f docker-compose.yml down -v
