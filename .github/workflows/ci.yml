@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Grab the repo
+      - uses: actions/checkout@v3
+
+      # 2. Enable Docker Buildx (for building multi-platform if you ever need)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 3. Build all images and start services in detached mode
+      - name: Build & start services
+        run: |
+          docker-compose -f docker-compose.yml up --build -d
+
+      # 4. Wait for Postgres to be ready
+      - name: Wait for Postgres
+        run: |
+          until docker exec "$(docker-compose ps -q postgres)" pg_isready -U ${POSTGRES_USER:-youruser}; do
+            echo "Waiting for Postgres…"
+            sleep 1
+          done
+
+      # 5. Wait for Redis to be ready
+      - name: Wait for Redis
+        run: |
+          until docker exec "$(docker-compose ps -q redis)" redis-cli ping | grep -q PONG; do
+            echo "Waiting for Redis…"
+            sleep 1
+          done
+
+      # 6. Run Django migrations inside the web container
+      - name: Run migrations
+        run: docker-compose exec web python manage.py migrate --noinput
+
+      # 7. Run your test suite (e.g. pytest or Django’s test runner)
+      - name: Run tests
+        run: docker-compose exec web pytest
+
+      # 8. Tear down everything, removing volumes
+      - name: Tear down
+        run: docker-compose down -v
